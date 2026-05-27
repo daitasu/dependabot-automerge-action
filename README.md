@@ -56,7 +56,7 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - uses: daitasu/dependabot-automerge@v1
+      - uses: daitasu/dependabot-automerge-action@v1
         with:
           github-token: ${{ steps.bot-token.outputs.token }}
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -70,7 +70,7 @@ jobs:
 ### patch のみ auto-merge（AI レビューなし）
 
 ```yaml
-- uses: daitasu/dependabot-automerge@v1
+- uses: daitasu/dependabot-automerge-action@v1
   with:
     github-token: ${{ steps.bot-token.outputs.token }}
     patch-strategy: "auto-merge"
@@ -81,7 +81,7 @@ jobs:
 ### 全レベルで AI レビュー + auto-merge
 
 ```yaml
-- uses: daitasu/dependabot-automerge@v1
+- uses: daitasu/dependabot-automerge-action@v1
   with:
     github-token: ${{ steps.bot-token.outputs.token }}
     anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
