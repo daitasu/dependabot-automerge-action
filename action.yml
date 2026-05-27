@@ -1,0 +1,159 @@
+name: "Dependabot Auto Merge"
+description: "Auto-merge Dependabot PRs with configurable strategies (auto-merge / AI review + merge / AI review only) per semver level."
+author: "daitasu"
+
+branding:
+  icon: "git-merge"
+  color: "green"
+
+inputs:
+  patch-strategy:
+    description: >
+      Strategy for patch version updates.
+      One of: auto-merge, review-and-merge, review-only, none.
+    required: false
+    default: "auto-merge"
+  minor-strategy:
+    description: >
+      Strategy for minor version updates.
+      One of: auto-merge, review-and-merge, review-only, none.
+    required: false
+    default: "review-and-merge"
+  major-strategy:
+    description: >
+      Strategy for major version updates.
+      One of: auto-merge, review-and-merge, review-only, none.
+    required: false
+    default: "review-only"
+  github-token:
+    description: "GitHub token for approve and merge operations (e.g. GitHub App token or PAT)."
+    required: true
+  anthropic-api-key:
+    description: "Anthropic API key for Claude Code AI review. Required when using review-and-merge or review-only strategies."
+    required: false
+    default: ""
+  claude-github-token:
+    description: "GitHub token for Claude Code Action. Required when using review-and-merge or review-only strategies."
+    required: false
+    default: ""
+  claude-model:
+    description: "Claude model to use for AI review."
+    required: false
+    default: "sonnet"
+  reviewer-login:
+    description: >
+      Bot login name whose review approval to check before merging (e.g. "my-claude-app[bot]").
+      Used only with review-and-merge strategy. If empty, checks the latest review on the PR.
+    required: false
+    default: ""
+
+outputs:
+  strategy:
+    description: "The strategy that was applied."
+    value: ${{ steps.determine.outputs.strategy }}
+  update-type:
+    description: "The semver update level (patch, minor, major)."
+    value: ${{ steps.determine.outputs.update-type }}
+
+runs:
+  using: "composite"
+  steps:
+    # ── 1. Fetch Dependabot metadata ──
+    - name: Fetch Dependabot metadata
+      id: fetch-metadata
+      uses: dependabot/fetch-metadata@dbb049abf0d677abbd7f7eee0375145b417fdd34 # v2.3.0
+      with:
+        github-token: ${{ inputs.github-token }}
+
+    # ── 2. Determine strategy ──
+    - name: Determine strategy
+      id: determine
+      shell: bash
+      run: ${{ github.action_path }}/scripts/determine-strategy.sh
+      env:
+        UPDATE_TYPE: ${{ steps.fetch-metadata.outputs.update-type }}
+        PATCH_STRATEGY: ${{ inputs.patch-strategy }}
+        MINOR_STRATEGY: ${{ inputs.minor-strategy }}
+        MAJOR_STRATEGY: ${{ inputs.major-strategy }}
+
+    # ── 3a. auto-merge: approve + merge immediately ──
+    - name: "Auto-merge: approve & merge"
+      if: steps.determine.outputs.strategy == 'auto-merge'
+      shell: bash
+      run: ${{ github.action_path }}/scripts/auto-merge.sh
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+
+    # ── 3b. review-and-merge: AI review with approve permission ──
+    - name: "AI Review (review-and-merge)"
+      if: steps.determine.outputs.strategy == 'review-and-merge'
+      uses: anthropics/claude-code-action@d59651bd82c48d81756854675ce4fa4d69722200 # v1
+      with:
+        allowed_bots: "dependabot"
+        anthropic_api_key: ${{ inputs.anthropic-api-key }}
+        github_token: ${{ inputs.claude-github-token }}
+        claude_args: >-
+          --model ${{ inputs.claude-model }}
+          --allowedTools
+          "Bash(gh pr review ${{ github.event.pull_request.number }} -a),Bash(gh pr comment ${{ github.event.pull_request.number }} -b:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+          --max-turns 50
+        prompt: |
+          この Dependabot PR（マイナーアップデート）をレビューしてください。
+
+          ## 確認観点
+          - CHANGELOG / リリースノートに breaking change が含まれていないか
+          - 依存パッケージのバージョン制約に矛盾がないか
+          - lockfile の差分が妥当か
+
+          ## 手順
+          1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を確認
+          2. `gh pr view ${{ github.event.pull_request.number }}` で PR 概要を確認
+          3. 問題がなければ `gh pr review ${{ github.event.pull_request.number }} -a` で approve
+          4. 懸念がある場合は approve せず `gh pr comment` でコメントを残す
+
+          コメントはすべて日本語で記述してください。
+        timeout_minutes: 10
+
+    - name: "Conditional merge after AI review"
+      if: steps.determine.outputs.strategy == 'review-and-merge'
+      shell: bash
+      run: ${{ github.action_path }}/scripts/conditional-merge.sh
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REVIEWER_LOGIN: ${{ inputs.reviewer-login }}
+
+    # ── 3c. review-only: AI review comment only (no merge) ──
+    - name: "AI Review (review-only)"
+      if: steps.determine.outputs.strategy == 'review-only'
+      uses: anthropics/claude-code-action@d59651bd82c48d81756854675ce4fa4d69722200 # v1
+      with:
+        allowed_bots: "dependabot"
+        anthropic_api_key: ${{ inputs.anthropic-api-key }}
+        github_token: ${{ inputs.claude-github-token }}
+        claude_args: >-
+          --model ${{ inputs.claude-model }}
+          --allowedTools
+          "Bash(gh pr comment ${{ github.event.pull_request.number }} -b:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+          --max-turns 50
+        prompt: |
+          この Dependabot PR（メジャーアップデート等）をレビューしてください。
+
+          ## 手順（必ずこの順序で実行すること）
+          1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を取得して内容を確認する
+          2. `gh pr view ${{ github.event.pull_request.number }}` で PR の概要を確認する
+          3. 以下の観点でレビューする:
+             - CHANGELOG / リリースノートの breaking change
+             - 依存パッケージのバージョン制約の矛盾
+             - API の非互換変更の有無
+             - マイグレーションガイドの有無
+          4. レビュー結果を `gh pr comment ${{ github.event.pull_request.number }} -b "..."` で投稿する
+
+          ## 注意事項
+          - ⚠️ この PR は自動マージしません
+          - approve や request-changes は絶対に行わないでください
+          - 必ず `gh pr comment` でレビューコメントを投稿してから終了すること
+          - コメントはすべて日本語で記述してください
+        timeout_minutes: 10
