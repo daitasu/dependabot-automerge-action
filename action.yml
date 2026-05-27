@@ -96,7 +96,7 @@ runs:
         claude_args: >-
           --model ${{ inputs.claude-model }}
           --allowedTools
-          "Bash(gh pr review ${{ github.event.pull_request.number }} -a),Bash(gh pr comment ${{ github.event.pull_request.number }} -b:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+          "Bash(gh pr review ${{ github.event.pull_request.number }} --approve:*),Bash(gh pr comment ${{ github.event.pull_request.number }} -b:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
           --max-turns 50
         prompt: |
           この Dependabot PR（マイナーアップデート）をレビューしてください。
@@ -109,7 +109,7 @@ runs:
           ## 手順
           1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を確認
           2. `gh pr view ${{ github.event.pull_request.number }}` で PR 概要を確認
-          3. 問題がなければ `gh pr review ${{ github.event.pull_request.number }} -a` で approve
+          3. 問題がなければ `gh pr review ${{ github.event.pull_request.number }} --approve` で approve
           4. 懸念がある場合は approve せず `gh pr comment` でコメントを残す
 
           コメントはすべて日本語で記述してください。
