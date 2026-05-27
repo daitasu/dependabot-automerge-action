@@ -40,31 +40,24 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Generate Bot Token
-        id: bot-token
+      - name: Generate App Token
+        id: app-token
         uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_PRIVATE_KEY }}
 
-      - name: Generate Claude Token
-        id: claude-token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ vars.CLAUDE_CODE_APP_ID }}
-          private-key: ${{ secrets.CLAUDE_CODE_APP_PRIVATE_KEY }}
-
       - uses: actions/checkout@v4
 
       - uses: daitasu/dependabot-automerge-action@v1
         with:
-          github-token: ${{ steps.bot-token.outputs.token }}
+          github-token: ${{ steps.app-token.outputs.token }}
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude-github-token: ${{ steps.claude-token.outputs.token }}
+          claude-github-token: ${{ steps.app-token.outputs.token }}
           # patch-strategy: 'auto-merge'       # default
           # minor-strategy: 'review-and-merge'  # default
           # major-strategy: 'review-only'       # default
-          reviewer-login: "my-claude-app[bot]"
+          reviewer-login: "my-bot[bot]"
 ```
 
 ### patch のみ auto-merge（AI レビューなし）
@@ -72,7 +65,7 @@ jobs:
 ```yaml
 - uses: daitasu/dependabot-automerge-action@v1
   with:
-    github-token: ${{ steps.bot-token.outputs.token }}
+    github-token: ${{ steps.app-token.outputs.token }}
     patch-strategy: "auto-merge"
     minor-strategy: "none"
     major-strategy: "none"
@@ -83,13 +76,13 @@ jobs:
 ```yaml
 - uses: daitasu/dependabot-automerge-action@v1
   with:
-    github-token: ${{ steps.bot-token.outputs.token }}
+    github-token: ${{ steps.app-token.outputs.token }}
     anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-    claude-github-token: ${{ steps.claude-token.outputs.token }}
+    claude-github-token: ${{ steps.app-token.outputs.token }}
     patch-strategy: "review-and-merge"
     minor-strategy: "review-and-merge"
     major-strategy: "review-and-merge"
-    reviewer-login: "my-claude-app[bot]"
+    reviewer-login: "my-bot[bot]"
 ```
 
 ## Inputs
@@ -114,15 +107,13 @@ jobs:
 
 ## Required Permissions
 
-### GitHub App (Bot) に必要な権限
+### GitHub App に必要な権限
 
-- **Pull requests**: Read & Write（approve, merge）
+- **Pull requests**: Read & Write（approve, merge, レビューコメント投稿）
 - **Contents**: Read（リポジトリ読み取り）
 
-### Claude Code Action 用 GitHub App に必要な権限
-
-- **Pull requests**: Read & Write（レビューコメント投稿、approve）
-- **Contents**: Read
+> **Note:** `github-token` と `claude-github-token` に同じトークンを渡せば GitHub App は1つで OK です。
+> 権限を分離したい場合は別々の App を使うこともできます。
 
 ### ワークフローの permissions
 
