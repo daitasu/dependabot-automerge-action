@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
     steps:
       - name: Generate App Token
@@ -122,7 +122,7 @@ jobs:
 
 ```yaml
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 ```
 
