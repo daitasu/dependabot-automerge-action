@@ -12,12 +12,15 @@ set -euo pipefail
 echo "::group::Conditional merge after AI review"
 
 REVIEWS_JSON=$(gh pr view "$PR_NUMBER" --json reviews)
-echo "Raw reviews JSON: ${REVIEWS_JSON}"
+
+# gh pr view --json (GraphQL) returns bot logins without the [bot] suffix,
+# e.g. "deps-keeper" instead of "deps-keeper[bot]". Strip it for comparison.
+REVIEWER_LOGIN_CLEAN="${REVIEWER_LOGIN/%\[bot\]/}"
 
 if [[ -n "${REVIEWER_LOGIN}" ]]; then
-  echo "Checking review state from: ${REVIEWER_LOGIN}"
+  echo "Checking review state from: ${REVIEWER_LOGIN} (matching: ${REVIEWER_LOGIN_CLEAN})"
   REVIEW_STATE=$(echo "$REVIEWS_JSON" | jq -r \
-    "[.reviews[] | select(.author.login == \"${REVIEWER_LOGIN}\")] | last | .state // empty")
+    "[.reviews[] | select(.author.login == \"${REVIEWER_LOGIN_CLEAN}\")] | last | .state // empty")
 else
   echo "No reviewer-login specified — checking latest review"
   REVIEW_STATE=$(echo "$REVIEWS_JSON" | jq -r \
