@@ -1,4 +1,4 @@
-# Dependabot Auto Merge Action
+# cc-deps-patrol
 
 A GitHub Composite Action that auto-merges Dependabot PRs with configurable strategies per semver level (patch / minor / major).
 
@@ -52,7 +52,7 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - uses: daitasu/dependabot-automerge-action@v1
+      - uses: daitasu/cc-deps-patrol@v1
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -66,7 +66,7 @@ jobs:
 ### Patch-only auto-merge (no AI review)
 
 ```yaml
-- uses: daitasu/dependabot-automerge-action@v1
+- uses: daitasu/cc-deps-patrol@v1
   with:
     github-token: ${{ steps.app-token.outputs.token }}
     patch-strategy: "auto-merge"
@@ -77,7 +77,7 @@ jobs:
 ### AI review + merge for all levels
 
 ```yaml
-- uses: daitasu/dependabot-automerge-action@v1
+- uses: daitasu/cc-deps-patrol@v1
   with:
     github-token: ${{ steps.app-token.outputs.token }}
     anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -91,7 +91,7 @@ jobs:
 ### Japanese review comments
 
 ```yaml
-- uses: daitasu/dependabot-automerge-action@v1
+- uses: daitasu/cc-deps-patrol@v1
   with:
     github-token: ${{ steps.app-token.outputs.token }}
     anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}

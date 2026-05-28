@@ -1,4 +1,4 @@
-name: "Dependabot Auto Merge"
+name: "cc-deps-patrol"
 description: "Auto-merge Dependabot PRs with configurable strategies (auto-merge / AI review + merge / AI review only) per semver level."
 author: "daitasu"
 
