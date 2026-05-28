@@ -1,19 +1,19 @@
 # Dependabot Auto Merge Action
 
-Dependabot PR を semver レベル（patch / minor / major）ごとに設定可能な戦略で自動マージする GitHub Composite Action。
+A GitHub Composite Action that auto-merges Dependabot PRs with configurable strategies per semver level (patch / minor / major).
 
-AI レビューには [Claude Code Action](https://github.com/anthropics/claude-code-action) を使用。
+Uses [Claude Code Action](https://github.com/anthropics/claude-code-action) for AI-powered reviews.
 
 ## Strategies
 
-| 戦略 | 動作 |
+| Strategy | Behavior |
 |---|---|
-| `auto-merge` | approve して即 auto-merge |
-| `review-and-merge` | AI がレビュー → approve したら auto-merge |
-| `review-only` | AI がレビューコメントを投稿（マージしない） |
-| `none` | 何もしない |
+| `auto-merge` | Approve and merge immediately |
+| `review-and-merge` | AI reviews the PR — merges if approved |
+| `review-only` | AI posts a review comment (no merge) |
+| `none` | Do nothing |
 
-### デフォルト設定
+### Defaults
 
 | semver level | default strategy |
 |---|---|
@@ -23,8 +23,8 @@ AI レビューには [Claude Code Action](https://github.com/anthropics/claude-
 
 ## Usage
 
-> **Note:** Dependabot の PR では `pull_request` イベントだと repository secrets にアクセスできません。
-> `pull_request_target` を使用してください。
+> **Note:** Dependabot PRs cannot access repository secrets with the `pull_request` event.
+> Use `pull_request_target` instead.
 
 ```yaml
 name: Dependabot Auto Merge
@@ -63,7 +63,7 @@ jobs:
           reviewer-login: "my-bot[bot]"
 ```
 
-### patch のみ auto-merge（AI レビューなし）
+### Patch-only auto-merge (no AI review)
 
 ```yaml
 - uses: daitasu/dependabot-automerge-action@v1
@@ -74,7 +74,7 @@ jobs:
     major-strategy: "none"
 ```
 
-### 全レベルで AI レビュー + auto-merge
+### AI review + merge for all levels
 
 ```yaml
 - uses: daitasu/dependabot-automerge-action@v1
@@ -88,43 +88,58 @@ jobs:
     reviewer-login: "my-bot[bot]"
 ```
 
+### Japanese review comments
+
+```yaml
+- uses: daitasu/dependabot-automerge-action@v1
+  with:
+    github-token: ${{ steps.app-token.outputs.token }}
+    anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+    claude-github-token: ${{ steps.app-token.outputs.token }}
+    review-language: "ja"
+    reviewer-login: "my-bot[bot]"
+```
+
 ## Inputs
 
 | Name | Required | Default | Description |
 |---|---|---|---|
-| `patch-strategy` | No | `auto-merge` | patch 更新の戦略 |
-| `minor-strategy` | No | `review-and-merge` | minor 更新の戦略 |
-| `major-strategy` | No | `review-only` | major 更新の戦略 |
-| `github-token` | **Yes** | - | approve/merge 用の GitHub token |
-| `anthropic-api-key` | No | `""` | Anthropic API key（review 系戦略で必須） |
-| `claude-github-token` | No | `""` | Claude Code Action 用 GitHub token（review 系戦略で必須） |
-| `claude-model` | No | `sonnet` | AI レビューに使用する Claude モデル |
-| `reviewer-login` | No | `""` | AI レビュアーの bot login 名（`review-and-merge` 時に approve 確認で使用） |
+| `patch-strategy` | No | `auto-merge` | Strategy for patch updates |
+| `minor-strategy` | No | `review-and-merge` | Strategy for minor updates |
+| `major-strategy` | No | `review-only` | Strategy for major updates |
+| `github-token` | **Yes** | - | GitHub token for approve/merge (e.g. GitHub App token or PAT) |
+| `anthropic-api-key` | No | `""` | Anthropic API key (required for review strategies) |
+| `claude-github-token` | No | `""` | GitHub token for Claude Code Action (required for review strategies) |
+| `claude-model` | No | `sonnet` | Claude model for AI review |
+| `reviewer-login` | No | `""` | Bot login name to check for approval (`review-and-merge` only) |
+| `review-language` | No | `en` | Language for AI review comments (`en`, `ja`, etc.) |
 
 ## Outputs
 
 | Name | Description |
 |---|---|
-| `strategy` | 適用された戦略名 |
-| `update-type` | semver 更新種別（`patch`, `minor`, `major`） |
+| `strategy` | The strategy that was applied |
+| `update-type` | The semver update level (`patch`, `minor`, `major`) |
 
 ## Required Permissions
 
-### GitHub App に必要な権限
+### GitHub App
 
-- **Pull requests**: Read & Write（approve, レビューコメント投稿）
-- **Contents**: Read & Write（リポジトリ読み取り、PR マージ）
+- **Pull requests**: Read & Write (approve, review comments)
+- **Contents**: Read & Write (read repository, merge PRs)
 
-> **Note:** `github-token` と `claude-github-token` に同じトークンを渡せば GitHub App は1つで OK です。
-> 権限を分離したい場合は別々の App を使うこともできます。
+> **Note:** You can pass the same token to both `github-token` and `claude-github-token` — a single GitHub App is sufficient.
+> Use separate Apps if you want to isolate permissions.
 
-### ワークフローの permissions
+### Workflow permissions
 
 ```yaml
 permissions:
   contents: read
   pull-requests: write
 ```
+
+> These only apply to `GITHUB_TOKEN`. GitHub App tokens use their own permission set.
 
 ## License
 

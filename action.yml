@@ -46,6 +46,10 @@ inputs:
       Used only with review-and-merge strategy. If empty, checks the latest review on the PR.
     required: false
     default: ""
+  review-language:
+    description: "Language for AI review comments (e.g. en, ja)."
+    required: false
+    default: "en"
 
 outputs:
   strategy:
@@ -99,20 +103,20 @@ runs:
           "Bash(gh pr review ${{ github.event.pull_request.number }} --approve:*),Bash(gh pr comment ${{ github.event.pull_request.number }} -b:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
           --max-turns 50
         prompt: |
-          この Dependabot PR（マイナーアップデート）をレビューしてください。
+          Review this Dependabot PR (minor update).
 
-          ## 確認観点
-          - CHANGELOG / リリースノートに breaking change が含まれていないか
-          - 依存パッケージのバージョン制約に矛盾がないか
-          - lockfile の差分が妥当か
+          ## Review criteria
+          - Check if CHANGELOG / release notes contain any breaking changes
+          - Check for dependency version constraint conflicts
+          - Verify that lockfile changes are valid
 
-          ## 手順
-          1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を確認
-          2. `gh pr view ${{ github.event.pull_request.number }}` で PR 概要を確認
-          3. 問題がなければ `gh pr review ${{ github.event.pull_request.number }} --approve` で approve
-          4. 懸念がある場合は approve せず `gh pr comment` でコメントを残す
+          ## Steps
+          1. Run `gh pr diff ${{ github.event.pull_request.number }}` to review the diff
+          2. Run `gh pr view ${{ github.event.pull_request.number }}` to check the PR summary
+          3. If no issues found, run `gh pr review ${{ github.event.pull_request.number }} --approve` to approve
+          4. If there are concerns, do NOT approve — leave a comment with `gh pr comment` instead
 
-          コメントはすべて日本語で記述してください。
+          Write all comments in: ${{ inputs.review-language }}
         timeout_minutes: 10
 
     - name: "Conditional merge after AI review"
@@ -139,21 +143,22 @@ runs:
           "Bash(gh pr comment ${{ github.event.pull_request.number }} -b:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
           --max-turns 50
         prompt: |
-          この Dependabot PR（メジャーアップデート等）をレビューしてください。
+          Review this Dependabot PR (major update or similar).
 
-          ## 手順（必ずこの順序で実行すること）
-          1. `gh pr diff ${{ github.event.pull_request.number }}` で差分を取得して内容を確認する
-          2. `gh pr view ${{ github.event.pull_request.number }}` で PR の概要を確認する
-          3. 以下の観点でレビューする:
-             - CHANGELOG / リリースノートの breaking change
-             - 依存パッケージのバージョン制約の矛盾
-             - API の非互換変更の有無
-             - マイグレーションガイドの有無
-          4. レビュー結果を `gh pr comment ${{ github.event.pull_request.number }} -b "..."` で投稿する
+          ## Steps (follow this order)
+          1. Run `gh pr diff ${{ github.event.pull_request.number }}` to fetch and review the diff
+          2. Run `gh pr view ${{ github.event.pull_request.number }}` to check the PR summary
+          3. Review with the following criteria:
+             - Breaking changes in CHANGELOG / release notes
+             - Dependency version constraint conflicts
+             - Incompatible API changes
+             - Availability of migration guides
+          4. Post review results with `gh pr comment ${{ github.event.pull_request.number }} -b "..."`
 
-          ## 注意事項
-          - ⚠️ この PR は自動マージしません
-          - approve や request-changes は絶対に行わないでください
-          - 必ず `gh pr comment` でレビューコメントを投稿してから終了すること
-          - コメントはすべて日本語で記述してください
+          ## Important
+          - This PR will NOT be auto-merged
+          - Do NOT approve or request changes
+          - You MUST post a review comment via `gh pr comment` before finishing
+
+          Write all comments in: ${{ inputs.review-language }}
         timeout_minutes: 10
