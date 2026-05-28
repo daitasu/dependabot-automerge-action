@@ -30,8 +30,8 @@ fi
 echo "review-state=${REVIEW_STATE}" >> "$GITHUB_OUTPUT"
 
 if [[ "$REVIEW_STATE" == "APPROVED" ]]; then
-  echo "✅ AI review approved — enabling auto-merge"
-  gh pr merge "$PR_URL" --auto --merge
+  echo "✅ AI review approved — merging"
+  gh pr merge "$PR_URL" --merge
   echo "merged=true" >> "$GITHUB_OUTPUT"
 else
   echo "⚠️ AI review did not approve (state: ${REVIEW_STATE}) — skipping auto-merge"

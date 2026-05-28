@@ -12,7 +12,7 @@ echo "::group::Approve & auto-merge"
 gh pr review "$PR_URL" --approve --body "🤖 Auto-approved by dependabot-automerge action."
 echo "✅ PR approved"
 
-gh pr merge "$PR_URL" --auto --merge
-echo "✅ Auto-merge enabled"
+gh pr merge "$PR_URL" --merge
+echo "✅ PR merged"
 
 echo "::endgroup::"
