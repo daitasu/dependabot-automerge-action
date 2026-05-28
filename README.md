@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     steps:
       - name: Generate App Token
@@ -112,8 +112,8 @@ jobs:
 
 ### GitHub App に必要な権限
 
-- **Pull requests**: Read & Write（approve, merge, レビューコメント投稿）
-- **Contents**: Read（リポジトリ読み取り）
+- **Pull requests**: Read & Write（approve, レビューコメント投稿）
+- **Contents**: Read & Write（リポジトリ読み取り、PR マージ）
 
 > **Note:** `github-token` と `claude-github-token` に同じトークンを渡せば GitHub App は1つで OK です。
 > 権限を分離したい場合は別々の App を使うこともできます。
@@ -122,7 +122,7 @@ jobs:
 
 ```yaml
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 ```
 
