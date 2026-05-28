@@ -23,10 +23,13 @@ AI レビューには [Claude Code Action](https://github.com/anthropics/claude-
 
 ## Usage
 
+> **Note:** Dependabot の PR では `pull_request` イベントだと repository secrets にアクセスできません。
+> `pull_request_target` を使用してください。
+
 ```yaml
 name: Dependabot Auto Merge
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, ready_for_review]
 
 permissions: {}
