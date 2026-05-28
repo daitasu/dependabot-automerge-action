@@ -11,14 +11,17 @@ set -euo pipefail
 
 echo "::group::Conditional merge after AI review"
 
+REVIEWS_JSON=$(gh pr view "$PR_NUMBER" --json reviews)
+echo "Raw reviews JSON: ${REVIEWS_JSON}"
+
 if [[ -n "${REVIEWER_LOGIN}" ]]; then
   echo "Checking review state from: ${REVIEWER_LOGIN}"
-  REVIEW_STATE=$(gh pr view "$PR_NUMBER" --json reviews --jq \
-    "[.reviews[] | select(.author.login == \"${REVIEWER_LOGIN}\")] | last | .state")
+  REVIEW_STATE=$(echo "$REVIEWS_JSON" | jq -r \
+    "[.reviews[] | select(.author.login == \"${REVIEWER_LOGIN}\")] | last | .state // empty")
 else
   echo "No reviewer-login specified — checking latest review"
-  REVIEW_STATE=$(gh pr view "$PR_NUMBER" --json reviews --jq \
-    '.reviews | last | .state')
+  REVIEW_STATE=$(echo "$REVIEWS_JSON" | jq -r \
+    '.reviews | last | .state // empty')
 fi
 
 echo "review-state=${REVIEW_STATE}" >> "$GITHUB_OUTPUT"
